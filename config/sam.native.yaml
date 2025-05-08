@@ -1,0 +1,48 @@
+  AWSTemplateFormatVersion: '2010-09-09'
+  Transform: AWS::Serverless-2016-10-31
+  Description: AWS Serverless Quarkus HTTP - calculatorApi-1.0-SNAPSHOT
+  Globals:
+    Api:
+      EndpointConfiguration: REGIONAL
+      BinaryMediaTypes:
+        - "*/*"
+
+  Resources:
+    CalculatorapiNative:
+      Type: AWS::Serverless::Function
+      Properties:
+        Handler: not.used.in.provided.runtime
+        Runtime: provided.al2
+        CodeUri: function.zip
+        MemorySize: 128
+        Policies: AWSLambdaBasicExecutionRole
+        Timeout: 15
+        Environment:
+          Variables:
+            DISABLE_SIGNAL_HANDLERS: true
+        Events:
+          GetResource:
+            Type: Api
+            Properties:
+              Path: /{proxy+}
+              Method: any
+              RestApiId: !Ref CalculatorapiDeployment
+
+    CalculatorapiDeployment:
+      Type: AWS::Serverless::Api
+      Properties:
+        StageName: !Ref Stage
+        EndpointConfiguration: REGIONAL
+
+  Parameters:
+    Stage:
+      Type: String
+      # this will end up in the url. you can also use "v1" or "api" here, for example.
+      Default: 'prod'
+
+  Outputs:
+    CalculatorapiNativeApi:
+      Description: URL for application
+      Value: !Sub 'https://${CalculatorapiDeployment}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/'
+      Export:
+        Name: CalculatorapiNativeApi

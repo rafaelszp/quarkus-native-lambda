@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Serverless Quarkus HTTP - quarkus-graalvm-aws-lambda-arm64-1.0-SNAPSHOT
+Globals:
+  Api:
+    EndpointConfiguration: REGIONAL
+    BinaryMediaTypes:
+      - "*/*"
+
+Resources:
+
+  # Enable if you want to configure a custom domain (url) for the API gateway
+  #    ApiCertificate:
+  #      Type: AWS::CertificateManager::Certificate
+  #      Properties:
+  #        DomainName: !Ref CustomDomainName
+  #        ValidationMethod: DNS
+  #        # Enable if you want automated certificate validation through Route53
+  #        DomainValidationOptions:
+  #          - DomainName: !Ref CustomDomainName
+  #            HostedZoneId: !Ref HostedZoneId
+
+  CalculatorApiResource:
+    Type: AWS::Serverless::Function
+    Properties:
+      Architectures:
+        - arm64
+      Handler: not.used.in.provided.runtime
+      Runtime: provided.al2
+      CodeUri: function.zip
+      MemorySize: 256
+      Policies: AWSLambdaBasicExecutionRole
+      Timeout: 15
+      Environment:
+        Variables:
+          DISABLE_SIGNAL_HANDLERS: true
+      Events:
+        ServerlessEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: any
+            RestApiId: !Ref CalculatorApiDeployment
+
+  CalculatorApiDeployment:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      EndpointConfiguration: REGIONAL
+      # Enable if you want to configure a custom domain (url) for the API gateway
+#        Domain:
+#          DomainName: !Ref CustomDomainName
+#          CertificateArn: !Ref ApiCertificate
+#          # Enable if you want automatic dns configuration through Route 53
+#          Route53:
+#            HostedZoneId: !Ref HostedZoneId
+
+Parameters:
+  Stage:
+    Type: String
+    # this will end up in the url. you can also use "v1" or "api" here, for example.
+    Default: 'prod'
+  # Enable if you want to configure a custom domain (url) for the API gateway
+#    CustomDomainName:
+#      Type: String
+#      # custom domain name to use for the API gateway
+#      Default: serverless-api.demo-bertjan-1.openvalue.dev
+#    # Enable if you want automated DNS configuration through Route53
+#    HostedZoneId:
+#      Type: String
+#      # Route 53 hosted zone id to create the reference to the custom domain name in
+#      Default: Z03815861S4U8K2I6IF0V
+
+Outputs:
+  ApiGwURLOutput:
+    Description: API gateway URL
+    Value: !Sub 'https://${CalculatorApiDeployment}.execute-api.${AWS::Region}.amazonaws.com/${Stage}'
+  StackName:
+    Description: Cloudformation Stack name
+    Value: !Sub '${AWS::StackName}'
+  # Enable if you want to configure a custom domain (url) for the API gateway
+#    CustomDomainURLOutput:
+#      Description: Custom domain URL
+#      Value: !Sub 'https://${CustomDomainName}'
